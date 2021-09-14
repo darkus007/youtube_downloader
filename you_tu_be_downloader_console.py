@@ -1,9 +1,9 @@
 from pytube import YouTube
 
 
-def print_streams_info(iter, streams, i_tag):
+def print_streams_info(m_iter, streams, yt, i_tag):
     for stream in streams:
-        str_to_print = str(iter) + ':'
+        str_to_print = str(m_iter) + ':'
         try:
             str_to_print += f'\t{stream["qualityLabel"]}'
         except KeyError:
@@ -32,17 +32,33 @@ def print_streams_info(iter, streams, i_tag):
             str_to_print += f'\tAudio rate: {stream["audioSampleRate"]}'
         except KeyError:
             pass
+        try:
+            # file_size = round(int(yt.streams.get_by_itag(stream["itag"]).filesize) / 1024 / 1024, 3)
+            file_size = int(yt.streams.get_by_itag(stream["itag"]).filesize)
+            str_to_print += '\t File size: ' + str(file_size) + ' bytes'
+        except KeyError:
+            pass
 
-        iter += 1
+        m_iter += 1
         i_tag.append(stream["itag"])
         print(str_to_print)
 
-    return [iter, i_tag]
+    return [m_iter, i_tag]
 
 
 def get_video(url):
-    print('\n============== Video info ==============')
-    yt = YouTube(url)
+
+    def on_progress(stream, chunk, bytes_remaining):
+        percent = (file_size - bytes_remaining) / file_size
+        print(f'Downloaded: {percent:.0%}', end='\r')
+
+    def on_complete(stream, path):
+        print("\nFile saved as:\n" + path)
+
+    # print('\n============== Video info ==============')
+    print('\nVideo and audio info:')
+    yt = YouTube(url, on_progress_callback=on_progress, on_complete_callback=on_complete)
+    # yt = YouTube(url)
     print(f'Title: {yt.title}')
     print(f'Author: {yt.author}')
     # print(f'Description = {yt.description}')
@@ -52,18 +68,19 @@ def get_video(url):
     i_tag = [0]
 
     print('Progressive Formats:')
-    i, i_tag = print_streams_info(i, streams['formats'], i_tag)
+    i, i_tag = print_streams_info(i, streams['formats'], yt, i_tag)
 
     print('Adaptive Formats:')
-    i, i_tag = print_streams_info(i, streams['adaptiveFormats'], i_tag)
+    i, i_tag = print_streams_info(i, streams['adaptiveFormats'], yt, i_tag)
 
     print()
-    video_number = int(input(f'Enter video number to download (1 to {i - 1}): '))
+    video_number = int(input(f'Enter video or audio number to download (1 to {i - 1}): '))
 
-    print('\n============ Start download ============')
-    print('It may take several minutes to complete ...')
+    # print('\n============ Start download ============')
+    # print('It may take several minutes to complete ...')
+    file_size = int(yt.streams.get_by_itag(i_tag[video_number]).filesize)
     yt.streams.get_by_itag(i_tag[video_number]).download('video/')
-    print('================ Done! =================')
+    # print('================ Done! =================')
 
 
 def main():
