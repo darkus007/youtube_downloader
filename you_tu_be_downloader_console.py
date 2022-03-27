@@ -1,7 +1,9 @@
+""" Simple youtube downloader by URL """
 from pytube import YouTube
 
 
 def print_streams_info(m_iter, streams, yt, i_tag):
+    """ Shows available videos and audios for download """
     for stream in streams:
         str_to_print = str(m_iter) + ':'
         try:
